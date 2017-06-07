@@ -20,10 +20,11 @@ class UCAC4:
             self.path = path
         if self.path == None:
             print( "UCAC4 path is not set.", file = sys.stderr )
-            return
+            raise
         if len( glob.glob( os.path.join( self.path, "z???" ) ) ) == 0:
             print( "No UCAC4 binary file found.", file = sys.stderr )
             self.valid = 0
+            raise
         else:
             self.valid = 1
         self.indexfile = os.path.join( self.path, "..", "u4i", "u4index.asc" )
@@ -348,10 +349,11 @@ class UCAC5:
             self.path = path
         if self.path == None:
             print( "UCAC5 path is not set.", file = sys.stderr )
-            return
+            raise
         if len( glob.glob( os.path.join( self.path, "z???" ) ) ) == 0:
             print( "No UCAC5 binary file found.", file = sys.stderr )
             self.valid = 0
+            raise
         else:
             self.valid = 1
         self.indexfile = os.path.join( self.path, "u5index.asc" )

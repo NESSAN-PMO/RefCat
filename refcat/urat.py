@@ -20,10 +20,11 @@ class URAT1:
             self.path = path
         if self.path == None:
             print( "URAT1 path is not set.", file = sys.stderr )
-            return
+            raise
         if len( glob.glob( os.path.join( self.path, "z???" ) ) ) == 0:
             print( "No URAT1 binary file found.", file = sys.stderr )
             self.valid = 0
+            raise
         else:
             self.valid = 1
         self.indexfile = os.path.join( self.path, "v1index.asc" )
