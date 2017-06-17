@@ -7,9 +7,7 @@ import astropy
 from astropy.table import Table
 import os, sys
 import glob
-
-f = open( os.devnull, 'w' )
-#sys.stderr = f
+from astropy import log
 
 class UCAC4:
 
@@ -19,17 +17,17 @@ class UCAC4:
         else:
             self.path = path
         if self.path == None:
-            print( "UCAC4 path is not set.", file = sys.stderr )
-            raise
+            log.error( "UCAC4 path is not set." )
+            raise IOError( "None type path." )
         if len( glob.glob( os.path.join( self.path, "z???" ) ) ) == 0:
-            print( "No UCAC4 binary file found.", file = sys.stderr )
+            log.error( "No UCAC4 binary file found." )
             self.valid = 0
-            raise
+            raise IOError( "Invalid path." )
         else:
             self.valid = 1
         self.indexfile = os.path.join( self.path, "..", "u4i", "u4index.asc" )
         if not os.path.isfile( self.indexfile ):
-            print( "No UCAC4 index file found.", file = sys.stderr )
+            log.warning( "No UCAC4 index file found." )
             self.indexfile = None
         self.data = Table()
         self.UCAC4_RAW = np.dtype( [ 
@@ -252,7 +250,7 @@ class UCAC4:
             try:
                 ifile = open( self._get_ucac4_zone_file( zone, self.path ), 'rb' )
             except Exception as e:
-                print( "Zone file open failed,", e, file = sys.stderr )
+                log.warning( "Zone file open failed," + e )
                 ifile = None
             if ( ifile ):
                 keep_going = 1
@@ -279,7 +277,7 @@ class UCAC4:
                         cached_index_data[0:3] = [index_file_offset, offset, end_offset]
                         index.close()
                     except Exception as e:
-                        print( e, ", binary-search within entire zone", file = sys.stderr )
+                        log.info( e + ", binary-search within entire zone" )
                         offset = 0
                         ifile.seek( 0, 2 )
                         end_offset = ifile.tell() / self.UCAC4_RAW.itemsize
@@ -329,10 +327,10 @@ class UCAC4:
         self._output_catalog( tmpstars, tmpids, keep = keep )
         if( rval >=0 and ra >= 0. and ra < 360. ):
             if( ra1 < 0. ):
-                print( "Searching backwards.", file = sys.stderr )
+                log.info( "Searching backwards." )
                 rval += self.extract_ucac4_stars( ra + 360., dec, width, height, keep = 1 )
             if( ra2 > 360. ):
-                print( "Searching forwards.", file = sys.stderr )
+                log.info( "Searching forwards." )
                 rval += self.extract_ucac4_stars( ra - 360., dec, width, height, keep = 1 )
 
         return( rval )
@@ -348,17 +346,17 @@ class UCAC5:
         else:
             self.path = path
         if self.path == None:
-            print( "UCAC5 path is not set.", file = sys.stderr )
+            log.error( "UCAC5 path is not set." )
             raise
         if len( glob.glob( os.path.join( self.path, "z???" ) ) ) == 0:
-            print( "No UCAC5 binary file found.", file = sys.stderr )
+            log.error( "No UCAC5 binary file found." )
             self.valid = 0
             raise
         else:
             self.valid = 1
         self.indexfile = os.path.join( self.path, "u5index.asc" )
         if not os.path.isfile( self.indexfile ):
-            print( "No UCAC5 index file found.", file = sys.stderr )
+            log.warning( "No UCAC5 index file found." )
             self.indexfile = None
         self.data = Table()
         self.UCAC5_RAW = np.dtype( [ 
@@ -464,7 +462,7 @@ class UCAC5:
             try:
                 ifile = open( self._get_ucac5_zone_file( zone, self.path ), 'rb' )
             except Exception as e:
-                print( "Zone file open failed,", e, file = sys.stderr )
+                log.warning( "Zone file open failed," + e )
                 ifile = None
             if ( ifile ):
                 keep_going = 1
@@ -491,7 +489,7 @@ class UCAC5:
                         cached_index_data[0:3] = [index_file_offset, offset, end_offset]
                         index.close()
                     except Exception as e:
-                        print( e, ", binary-search within entire zone", file = sys.stderr )
+                        log.info( e + ", binary-search within entire zone" )
                         offset = 0
                         ifile.seek( 0, 2 )
                         end_offset = ifile.tell() / self.UCAC5_RAW.itemsize
@@ -541,10 +539,10 @@ class UCAC5:
         self._output_catalog( tmpstars, tmpids, keep = keep )
         if( rval >=0 and ra >= 0. and ra < 360. ):
             if( ra1 < 0. ):
-                print( "Searching backwards.", file = sys.stderr )
+                log.info( "Searching backwards." )
                 rval += self.extract_ucac5_stars( ra + 360., dec, width, height, keep = 1 )
             if( ra2 > 360. ):
-                print( "Searching forwards.", file = sys.stderr )
+                log.info( "Searching forwards."  )
                 rval += self.extract_ucac5_stars( ra - 360., dec, width, height, keep = 1 )
 
         return( rval )

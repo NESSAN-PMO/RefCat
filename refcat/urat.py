@@ -7,9 +7,7 @@ import astropy
 from astropy.table import Table
 import os, sys
 import glob
-
-f = open( os.devnull, 'w' )
-#sys.stderr = f
+from astropy import log
 
 class URAT1:
 
@@ -19,17 +17,17 @@ class URAT1:
         else:
             self.path = path
         if self.path == None:
-            print( "URAT1 path is not set.", file = sys.stderr )
-            raise
+            log.error( "URAT1 path is not set." )
+            raise IOError( "None type path." )
         if len( glob.glob( os.path.join( self.path, "z???" ) ) ) == 0:
-            print( "No URAT1 binary file found.", file = sys.stderr )
+            log.error( "No URAT1 binary file found." )
             self.valid = 0
-            raise
+            raise IOError( "Invalid path." )
         else:
             self.valid = 1
         self.indexfile = os.path.join( self.path, "v1index.asc" )
         if not os.path.isfile( self.indexfile ):
-            print( "No URAT1 index file found.", file = sys.stderr )
+            log.warning( "No URAT1 index file found." )
             self.indexfile = None
         self.data = Table()
         self.URAT1_RAW = np.dtype( [ 
@@ -192,7 +190,7 @@ class URAT1:
             try:
                 ifile = open( self._get_urat1_zone_file( zone, self.path ), 'rb' )
             except Exception as e:
-                print( "Zone file open failed,", e, file = sys.stderr )
+                log.warning( "Zone file open failed," + e )
                 ifile = None
             if ( ifile ):
                 keep_going = 1
@@ -219,7 +217,7 @@ class URAT1:
                         cached_index_data[0:3] = [index_file_offset, offset, end_offset]
                         index.close()
                     except Exception as e:
-                        print( e, ", binary-search within entire zone", file = sys.stderr )
+                        log.info( e + ", binary-search within entire zone" )
                         offset = 0
                         ifile.seek( 0, 2 )
                         end_offset = ifile.tell() / self.URAT1_RAW.itemsize
@@ -269,10 +267,10 @@ class URAT1:
         self._output_catalog( tmpstars, tmpids, keep = keep )
         if( rval >=0 and ra >= 0. and ra < 360. ):
             if( ra1 < 0. ):
-                print( "Searching backwards.", file = sys.stderr )
+                log.info( "Searching backwards." )
                 rval += self.extract_urat1_stars( ra + 360., dec, width, height, keep = 1 )
             if( ra2 > 360. ):
-                print( "Searching forwards.", file = sys.stderr )
+                lon.info( "Searching forwards." )
                 rval += self.extract_urat1_stars( ra - 360., dec, width, height, keep = 1 )
 
         return( rval )
