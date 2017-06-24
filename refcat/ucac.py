@@ -225,7 +225,7 @@ class UCAC4:
         else:
             self.data = Table( data = stars )
 
-    def extract_ucac4_stars( self, ra, dec, width, height, keep = 0 ):
+    def extract( self, ra, dec, width, height, keep = 0 ):
         if not self.valid:
             return
         tmpstars = []
@@ -328,10 +328,10 @@ class UCAC4:
         if( rval >=0 and ra >= 0. and ra < 360. ):
             if( ra1 < 0. ):
                 log.info( "Searching backwards." )
-                rval += self.extract_ucac4_stars( ra + 360., dec, width, height, keep = 1 )
+                rval += self.extract( ra + 360., dec, width, height, keep = 1 )
             if( ra2 > 360. ):
                 log.info( "Searching forwards." )
-                rval += self.extract_ucac4_stars( ra - 360., dec, width, height, keep = 1 )
+                rval += self.extract( ra - 360., dec, width, height, keep = 1 )
 
         return( rval )
 
@@ -437,7 +437,7 @@ class UCAC5:
         else:
             self.data = Table( data = stars )
 
-    def extract_ucac5_stars( self, ra, dec, width, height, keep = 0 ):
+    def extract( self, ra, dec, width, height, keep = 0 ):
         if not self.valid:
             return
         tmpstars = []
@@ -540,10 +540,10 @@ class UCAC5:
         if( rval >=0 and ra >= 0. and ra < 360. ):
             if( ra1 < 0. ):
                 log.info( "Searching backwards." )
-                rval += self.extract_ucac5_stars( ra + 360., dec, width, height, keep = 1 )
+                rval += self.extract( ra + 360., dec, width, height, keep = 1 )
             if( ra2 > 360. ):
                 log.info( "Searching forwards."  )
-                rval += self.extract_ucac5_stars( ra - 360., dec, width, height, keep = 1 )
+                rval += self.extract( ra - 360., dec, width, height, keep = 1 )
 
         return( rval )
 
@@ -552,6 +552,6 @@ if __name__ == "__main__":
     import time
     t = time.time()
     cat = UCAC4()
-    print( cat.extract_ucac4_stars( 50, -16.3, 2, 1.5 ) )
+    print( cat.extract( 50, -16.3, 2, 1.5 ) )
     print( time.time() - t )
     print( cat.data[10] )

@@ -165,7 +165,7 @@ class URAT1:
         else:
             self.data = Table( data = stars )
 
-    def extract_urat1_stars( self, ra, dec, width, height, keep = 0 ):
+    def extract( self, ra, dec, width, height, keep = 0 ):
         if not self.valid:
             return
         tmpstars = []
@@ -268,10 +268,10 @@ class URAT1:
         if( rval >=0 and ra >= 0. and ra < 360. ):
             if( ra1 < 0. ):
                 log.info( "Searching backwards." )
-                rval += self.extract_urat1_stars( ra + 360., dec, width, height, keep = 1 )
+                rval += self.extract( ra + 360., dec, width, height, keep = 1 )
             if( ra2 > 360. ):
                 lon.info( "Searching forwards." )
-                rval += self.extract_urat1_stars( ra - 360., dec, width, height, keep = 1 )
+                rval += self.extract( ra - 360., dec, width, height, keep = 1 )
 
         return( rval )
 
@@ -280,6 +280,6 @@ if __name__ == "__main__":
     import time
     t = time.time()
     cat = URAT1()
-    print( cat.extract_urat1_stars( 50, 16.3, 2, 1.5 ) )
+    print( cat.extract( 50, 16.3, 2, 1.5 ) )
     print( time.time() - t )
     print( cat.data[95] )
