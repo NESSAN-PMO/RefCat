@@ -14,7 +14,7 @@ import os.path
 
 class GAIA1:
 
-    def __init__( self, path = None, fmt = 'fits' ):
+    def __init__( self, path = None, fmt = 'fits', lvl = 6 ):
         if path == None:
             self.path = os.environ.get( "GAIA1_PATH" )
         else:
@@ -29,19 +29,18 @@ class GAIA1:
         else:
             self.valid = 1
         self.fmt = fmt
-        self.LEVEL = 6
+        self.LEVEL = lvl
         self.NSIDE = 2 ** self.LEVEL
         selfpath = os.path.dirname( __file__ )
-        self.indexfile = os.path.join( selfpath, "data", "gaia1index" )
+        self.index = Table.read( os.path.join( selfpath, "data", "gaia1index" ), format = 'ascii' )
         self.data = Table()
 
 
     def _get_gaia1_zone_file( self, id_min, id_max ):
 
-        index = Table.read( self.indexfile, format = 'ascii' )
         files = []
         for i in range( len( id_min ) ):
-            for row in index:
+            for row in self.index:
                 if id_min[i] > row['col3']:
                     continue
                 elif id_max[i] < row['col2']:
@@ -79,17 +78,77 @@ class GAIA1:
                     & ( catalog['ra'] < ra + width/2. )\
                     & ( catalog['dec'] > dec - height/2. )\
                     & ( catalog['dec'] < dec + height/2. ) ) ]
-            if self.data == None:
-                self.data = p
-            else:
-                astropy.table.vstack( self.data, p )
+            self.data = astropy.table.vstack( [self.data, p] )
         return( len( self.data ) )
+
+
+
+
+class TGASPTYC:
+
+    def __init__( self, path = None, datafile = 'tgasptyc.dat', lvl = 4 ):
+        if path == None:
+            self.path = os.environ.get( "TGASPTYC_PATH" )
+        else:
+            self.path = path
+        if self.path == None:
+            log.error( "TGASPTYC path is not set." )
+            raise IOError( "None type path." )
+        self.datafile = os.path.join( self.path, datafile )
+        self.readmefile = os.path.join( self.path, "ReadMe" )
+
+        if not os.path.isfile( self.datafile ):
+            log.error( "No TGASPTYC data file found." )
+            self.valid = 0
+            raise IOError( "Invalid path." )
+        else:
+            self.valid = 1
+        self.LEVEL = lvl
+        self.NSIDE = 2 ** self.LEVEL
+        selfpath = os.path.dirname( __file__ )
+        self.index = np.loadtxt( os.path.join( selfpath, "data", "tgasindex_l{}".format( lvl ) ), dtype = np.int64 )
+        self.data = Table()
+
+
+    def _get_tgasptyc_zone_file( self, pixels):
+
+        ranges = []
+        for p in pixels:
+            ranges.append( ( self.index[p], self.index[p+1] ) )
+        return( ranges )
+
+    def _output_catalog( self, stars, ids, keep = 0 ):
+        pass
+
+    def extract( self, ra, dec, width, height, keep = 0 ):
+        if not self.valid:
+            return
+        if keep == 0:
+            self.data = Table()
+
+        polygon = SkyCoord( [ra-width/2., ra+width/2., ra+width/2., ra-width/2.],\
+                [dec-height/2., dec-height/2., dec+height/2., dec+height/2.],\
+                unit = 'deg' ).cartesian.get_xyz().T
+        pix = hp.query_polygon( self.NSIDE, polygon, inclusive = True, nest = True )
+        rangelist = self._get_tgasptyc_zone_file( pix )
+
+        for r in rangelist:
+            catalog = Table.read( self.datafile, readme = self.readmefile, data_start = r[0], data_end = r[1], format = "ascii.cds", fast_reader = {'parallel': True, 'use_fast_converter': True} )
+            p = catalog[ np.where( ( catalog['RAdeg'] > ra - width/2. )\
+                    & ( catalog['RAdeg'] < ra + width/2. )\
+                    & ( catalog['DEdeg'] > dec - height/2. )\
+                    & ( catalog['DEdeg'] < dec + height/2. ) ) ]
+            self.data = astropy.table.vstack( [self.data, p] )
+
+        return( len( self.data ) )
+
 
 if __name__ == "__main__":
 
     import time
     t = time.time()
     cat = GAIA1()
+    #cat = TGASPTYC()
     print( cat.extract( 340.919, 30.922, 0.1, 0.1 ) )
     print( time.time() - t )
     print( cat.data )
