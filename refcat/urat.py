@@ -4,7 +4,7 @@
 from __future__ import print_function
 import numpy as np
 import astropy
-from astropy.table import Table
+from astropy.table import Table, vstack, hstack
 import os, sys
 import glob
 from astropy import log
@@ -64,7 +64,7 @@ class URAT1:
             ('ann', np.int8), ('ano', np.int8)
             ] )
         self.URAT1_STAR = np.dtype( [ 
-            ('ra', np.float), ('dec', np.float),
+            ('ra', np.float), ('spd', np.float),
             ('coord_e_s', np.float), ('coord_e_m', np.float),
             ('nst', np.int8), ('nsu', np.int8),
             ('epoch', np.float),
@@ -114,23 +114,10 @@ class URAT1:
     def _output_catalog( self, stars, ids, keep = 0 ):
         if stars == []:
             return
-        stars = np.array( stars )
-        ids = np.array( ids )
-        try:
-            from matplotlib.mlab import rec_append_fields
-            stars = rec_append_fields( stars, 'zone', ids[:,0] )
-            stars = rec_append_fields( stars, 'offset', ids[:,1] )
-        except:
-            from numpy.lib.recfunctions import append_fields
-            stars = append_fields( stars, 'zone', ids[:,0], usemask = False )
-            stars = append_fields( stars, 'offset', ids[:,1], usemask = False )
-        names = list( stars.dtype.names )
-        names[1] = 'dec'
-        stars.dtype.names = names
-        stars = stars.astype( self.URAT1_STAR )
+        stars = np.array( stars ).astype( self.URAT1_STAR )
         stars['ra'] /= 3600000.
-        stars['dec'] -= 324000000.
-        stars['dec'] /= 3600000.
+        stars['spd'] -= 324000000.
+        stars['spd'] /= 3600000.
         stars['coord_e_s'] /= 1.
         stars['coord_e_m'] /= 1.
         stars['epoch'] /= 1000.
@@ -156,14 +143,17 @@ class URAT1:
         stars['apass_mag_e_g'] /= 1000.
         stars['apass_mag_e_r'] /= 1000.
         stars['apass_mag_e_i'] /= 1000.
+        stars = Table( stars )
+        ids = Table( np.array( ids ), names = ( 'zone', 'offset' ) )
+        stars = hstack( [stars, ids] )
+        stars.rename_column( 'spd', 'dec' )
 
         if keep:
             if not isinstance( self.data, Table ):
                 self.data = Table()
-            self.data = astropy.table.vstack( [self.data, newdata] )
-            self.data.reset_index( drop = True, inplace = True )
+            self.data = vstack( [self.data, stars] )
         else:
-            self.data = Table( data = stars )
+            self.data = stars
 
     def extract( self, ra, dec, width, height, keep = 0 ):
         if not self.valid:
@@ -280,6 +270,6 @@ if __name__ == "__main__":
     import time
     t = time.time()
     cat = URAT1()
-    print( cat.extract( 50, 16.3, 2, 1.5 ) )
+    print( cat.extract( 50, 16.3, 0.2, 0.15, keep = 1 ) )
     print( time.time() - t )
-    print( cat.data[95] )
+    print( cat.data[35] )

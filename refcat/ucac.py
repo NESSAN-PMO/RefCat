@@ -4,7 +4,7 @@
 from __future__ import print_function
 import numpy as np
 import astropy
-from astropy.table import Table
+from astropy.table import Table, hstack, vstack
 import os, sys
 import glob
 from astropy import log
@@ -72,7 +72,7 @@ class UCAC4:
             ('ucac2_number', np.uint32)
             ] )
         self.UCAC4_STAR = np.dtype( [ 
-            ('ra', np.float), ('dec', np.float),
+            ('ra', np.float), ('spd', np.float),
             ('mag1', np.float), ('mag2', np.float),
             ('mag_e', np.float),
             ('obj_type', np.uint8), ('double_star_flag', np.uint8),
@@ -114,41 +114,8 @@ class UCAC4:
             ('twomass_ext_flag', np.uint8),
             ('id_number', np.uint32),
             ('ucac2_zone', np.uint16),
-            ('ucac2_number', np.uint32),
-            ('zone', np.int),
-            ('offset', np.int)
-            ] )
-        """
-        self.UCAC4_RAW = np.dtype( [ 
-            ('ra', np.int32), ('spd', np.int32),
-            ('mag1', np.uint16), ('mag2', np.uint16),
-            ('mag_e', np.uint8),
-            ('obj_type', np.uint8), ('double_star_flag', np.uint8),
-            ('ra_e', np.int8), ('dec_e', np.int8 ),
-            ('n_ucac_total', np.uint8),
-            ('n_ucac_used', np.uint8),
-            ('n_cats_used', np.uint8),
-            ('epoch_ra', np.uint16),
-            ('epoch_dec', np.uint16),
-            ('pm_ra', np.int16),
-            ('pm_dec', np.int16),
-            ('pm_ra_e', np.int8),
-            ('pm_dec_e', np.int8),
-            ('twomass_id', np.uint32),
-            ('mag_j',np.uint16), ('mag_h',np.uint16), ('mag_k',np.uint16), 
-            ('icq_flag', np.uint8, (3,)),
-            ('e2mpho', np.uint8, (3,)),
-            ('apass_mag', np.uint16, (5,)),
-            ('apass_mag_e', np.uint8, (5,)),
-            ('yale_gc_flags', np.uint8),
-            ('catalog_flags', np.uint32),
-            ('leda_flag', np.uint8),
-            ('twomass_ext_flag', np.uint8),
-            ('id_number', np.uint32),
-            ('ucac2_zone', np.uint16),
             ('ucac2_number', np.uint32)
             ] )
-        """
 
 
     def _get_ucac4_zone_file( self, zone_number, path ):
@@ -168,23 +135,12 @@ class UCAC4:
         return rval
 
     def _output_catalog( self, stars, ids, keep = 0 ):
-        stars = np.array( stars )
-        ids = np.array( ids )
-        try:
-            from matplotlib.mlab import rec_append_fields
-            stars = rec_append_fields( stars, 'zone', ids[:,0] )
-            stars = rec_append_fields( stars, 'offset', ids[:,1] )
-        except:
-            from numpy.lib.recfunctions import append_fields
-            stars = append_fields( stars, 'zone', ids[:,0], usemask = False )
-            stars = append_fields( stars, 'offset', ids[:,1], usemask = False )
-        names = list( stars.dtype.names )
-        names[1] = 'dec'
-        stars.dtype.names = names
-        stars = stars.astype( self.UCAC4_STAR )
+        if stars == []:
+            return
+        stars = np.array( stars ).astype( self.UCAC4_STAR )
         stars['ra'] /= 3600000.
-        stars['dec'] -= 324000000.
-        stars['dec'] /= 3600000.
+        stars['spd'] -= 324000000.
+        stars['spd'] /= 3600000.
         stars['ra_e'] += 128
         stars['dec_e'] += 128
         stars['mag1'] /= 1000.
@@ -216,14 +172,17 @@ class UCAC4:
         stars['apass_mag_e_g'] /= 100.
         stars['apass_mag_e_r'] /= 100.
         stars['apass_mag_e_i'] /= 100.
+        stars = Table( stars )
+        ids = Table( np.array( ids ), names = ( 'zone', 'offset' ) )
+        stars = hstack( [stars, ids] )
+        stars.rename_column( 'spd', 'dec' )
 
         if keep:
             if not isinstance( self.data, Table ):
                 self.data = Table()
-            self.data = astropy.table.vstack( [self.data, newdata] )
-            self.data.reset_index( drop = True, inplace = True )
+            self.data = vstack( [self.data, stars] )
         else:
-            self.data = Table( data = stars )
+            self.data = stars
 
     def extract( self, ra, dec, width, height, keep = 0 ):
         if not self.valid:
@@ -399,17 +358,9 @@ class UCAC5:
         return rval
 
     def _output_catalog( self, stars, ids, keep = 0 ):
-        stars = np.array( stars )
-        ids = np.array( ids )
-        try:
-            from matplotlib.mlab import rec_append_fields
-            stars = rec_append_fields( stars, 'zone', ids[:,0] )
-            stars = rec_append_fields( stars, 'offset', ids[:,1] )
-        except:
-            from numpy.lib.recfunctions import append_fields
-            stars = append_fields( stars, 'zone', ids[:,0], usemask = False )
-            stars = append_fields( stars, 'offset', ids[:,1], usemask = False )
-        stars = stars.astype( self.UCAC5_STAR )
+        if stars == []:
+            return
+        stars = np.array( stars ).astype( self.UCAC5_STAR )
         stars['ra_g'] /= 3600000.
         stars['dec_g'] /= 3600000.
         stars['ra_g_e'] /= 10.
@@ -428,14 +379,16 @@ class UCAC5:
         stars['mag_j'] /= 1000.
         stars['mag_h'] /= 1000.
         stars['mag_k'] /= 1000.
+        stars = Table( stars )
+        ids = Table( np.array( ids ), names = ( 'zone', 'offset' ) )
+        stars = hstack( [stars, ids] )
 
         if keep:
             if not isinstance( self.data, Table ):
                 self.data = Table()
-            self.data = astropy.table.vstack( [self.data, newdata] )
-            self.data.reset_index( drop = True, inplace = True )
+            self.data = vstack( [self.data, stars] )
         else:
-            self.data = Table( data = stars )
+            self.data = stars
 
     def extract( self, ra, dec, width, height, keep = 0 ):
         if not self.valid:
@@ -552,6 +505,6 @@ if __name__ == "__main__":
     import time
     t = time.time()
     cat = UCAC4()
-    print( cat.extract( 50, -16.3, 2, 1.5 ) )
+    print( cat.extract( 50, -16.3, 0.2, 0.15 ) )
     print( time.time() - t )
     print( cat.data[10] )
