@@ -6,6 +6,7 @@ import numpy as np
 import astropy
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
+from astropy.io import ascii
 import os, sys
 import glob
 from astropy import log
@@ -96,6 +97,7 @@ class TGASPTYC:
             raise IOError( "None type path." )
         self.datafile = os.path.join( self.path, datafile )
         self.readmefile = os.path.join( self.path, "ReadMe" )
+        self.linelength = len( open( self.datafile ).readline() )
 
         if not os.path.isfile( self.datafile ):
             log.error( "No TGASPTYC data file found." )
@@ -132,13 +134,22 @@ class TGASPTYC:
         pix = hp.query_polygon( self.NSIDE, polygon, inclusive = True, nest = True )
         rangelist = self._get_tgasptyc_zone_file( pix )
 
+        f = open( self.datafile, "r" )
+        lines = []
         for r in rangelist:
-            catalog = Table.read( self.datafile, readme = self.readmefile, data_start = r[0], data_end = r[1], format = "ascii.cds", fast_reader = {'parallel': True, 'use_fast_converter': True} )
-            p = catalog[ np.where( ( catalog['RAdeg'] > ra - width/2. )\
-                    & ( catalog['RAdeg'] < ra + width/2. )\
-                    & ( catalog['DEdeg'] > dec - height/2. )\
-                    & ( catalog['DEdeg'] < dec + height/2. ) ) ]
-            self.data = astropy.table.vstack( [self.data, p] )
+            f.seek( r[0] * self.linelength )
+            lines.append( f.read( ( r[1] - r[0] ) * self.linelength ) )
+        f.close()
+        content = ''.join( lines )
+
+        reader = ascii.get_reader( Reader = ascii.Cds, fill_values = [('',0)], readme = self.readmefile )
+        reader.data.table_name = "tgasptyc.dat"
+        catalog = reader.read( content )
+        p = catalog[ np.where( ( catalog['RAdeg'] > ra - width/2. )\
+                & ( catalog['RAdeg'] < ra + width/2. )\
+                & ( catalog['DEdeg'] > dec - height/2. )\
+                & ( catalog['DEdeg'] < dec + height/2. ) ) ]
+        self.data = astropy.table.vstack( [self.data, p] )
 
         return( len( self.data ) )
 
@@ -147,8 +158,8 @@ if __name__ == "__main__":
 
     import time
     t = time.time()
-    cat = GAIA1()
-    #cat = TGASPTYC()
-    print( cat.extract( 340.919, 30.922, 0.1, 0.1 ) )
+    #cat = GAIA1()
+    cat = TGASPTYC()
+    print( cat.extract( 340.919, 30.922, 1, 1 ) )
     print( time.time() - t )
     print( cat.data )
