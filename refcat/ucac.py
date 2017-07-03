@@ -122,17 +122,17 @@ class UCAC4:
         subfolder = "u4{0}".format( 'n' if zone_number >= 380 else 's' )
         filename = "z{0:03d}".format( zone_number )
         if os.path.isfile( os.path.join( path, filename ) ):
-            return os.path.join( path, filename )
+            return( os.path.join( path, filename ) )
         elif os.path.isfile( os.path.join( path, subfolder, filename ) ):
-            return os.path.join( path, subfolder, filename )
+            return( os.path.join( path, subfolder, filename ) )
         else:
-            return None
+            return( None )
 
     def _get_index_file_offset( self, zone, ra_start ):
         rval = ( zone - 1 ) * ( 1440 * 21 + 6 ) + ra_start * 21
         if ( ra_start ):
             rval += 6
-        return rval
+        return( rval )
 
     def _output_catalog( self, stars, ids, keep = 0 ):
         if stars == []:
@@ -347,15 +347,15 @@ class UCAC5:
     def _get_ucac5_zone_file( self, zone_number, path ):
         filename = "z{0:03d}".format( zone_number )
         if os.path.isfile( os.path.join( path, filename ) ):
-            return os.path.join( path, filename )
+            return( os.path.join( path, filename ) )
         else:
-            return None
+            return( None )
 
     def _get_index_file_offset( self, zone, ra_start ):
         rval = ( zone - 1 ) * ( 1440 * 21 + 6 ) + ra_start * 21
         if ( ra_start ):
             rval += 6
-        return rval
+        return( rval )
 
     def _output_catalog( self, stars, ids, keep = 0 ):
         if stars == []:

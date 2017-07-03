@@ -101,15 +101,15 @@ class URAT1:
     def _get_urat1_zone_file( self, zone_number, path ):
         filename = "z{0:03d}".format( zone_number )
         if os.path.isfile( os.path.join( path, filename ) ):
-            return os.path.join( path, filename )
+            return( os.path.join( path, filename ) )
         else:
-            return None
+            return( None )
 
     def _get_index_file_offset( self, zone, ra_start ):
         rval = ( zone - 326 ) * ( 1440 * 38 + 6 ) + ra_start * 38
         if ( ra_start ):
             rval += 6
-        return rval
+        return( rval )
 
     def _output_catalog( self, stars, ids, keep = 0 ):
         if stars == []:
